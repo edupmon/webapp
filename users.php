@@ -159,127 +159,119 @@ $conn->close();
     <title>Usuários</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    // Reusable validation function
-    function validateField(field, value) {
-        const validators = {
-            password: /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/,
-            username: /^[a-z]{4,12}$/,
-        };
+    <script>
+        // Handle form submission via AJAX
+        $(document).on('submit', '.user-form, .add-user-form', function(event) {
+            event.preventDefault();
 
-        if (!validators[field]) {
-            console.warn(`No validator defined for field: ${field}`);
-            return true; // Default to valid if no validator is defined
-        }
-
-        return validators[field].test(value);
-    }
-
-    // Reusable function to submit a form via AJAX
-    function submitFormAjax(form, url, successMessage, errorMessage) {
-        const formData = form.serialize(); // Serialize form data
-
-        $.ajax({
-            url: url,
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            success: function (response) {
-                if (response.success) {
-                    alert(successMessage);
-                    form[0].reset(); // Clear form fields
-                    location.reload(); // Reload the page to reflect changes
-                } else {
-                    alert(response.error || errorMessage);
+            const form = $(this);
+            const formData = form.serialize(); // Serialize form data
+            
+            // Submit form via AJAX
+            $.ajax({
+                url: 'users.php',
+                type: 'POST',
+                data: formData,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        alert('Operação realizada com sucesso!');
+                        location.reload(); // Reload the page to reflect changes
+                    } else {
+                        alert(response.error || 'Erro ao gravar alterações.');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erro ao processar solicitação:', status, error);
+                    alert('Erro na comunicação com o servidor.');
                 }
-            },
-            error: function (xhr, status, error) {
-                console.error('Erro ao processar solicitação:', status, error);
-                alert('Erro na comunicação com o servidor.');
-            }
+            });
         });
-    }
-
-    // Handle form submission via AJAX
-    $(document).on('submit', '.user-form, .add-user-form', function (event) {
-        event.preventDefault(); // Prevent the default form submission
-
-        const form = $(this);
-        const isAddUser = form.hasClass('add-user-form'); // Determine the form type
-        const field = isAddUser ? 'username' : 'password';
-        const input = form.find(`input[name="${field}"]`);
-        const value = input.val();
-
-        // Client-side validation
-        if (value && !validateField(field, value)) {
-            const errorMessage = isAddUser
-                ? 'O nome de usuário deve conter apenas letras minúsculas (a-z), sem espaços, com 4 a 12 caracteres.'
-                : 'A senha deve ter pelo menos 8 caracteres, incluindo um número, uma letra maiúscula e um caractere especial.';
-            alert(errorMessage);
-            return;
-        }
-
-        // Submit form via AJAX
-        const successMessage = isAddUser
-            ? 'Usuário adicionado com sucesso!'
-            : 'Alterações efetuadas com sucesso!';
-        const errorMessage = isAddUser
-            ? 'Erro ao adicionar usuário.'
-            : 'Erro ao gravar alterações.';
-
-        submitFormAjax(form, 'users.php', successMessage, errorMessage);
-    });
-</script>
+    </script>
 </head>
 <body>
     <div class="main">
         <h1>Usuários</h1>
-        <div class="table-container">
+        
+        <!-- Add New User (Admin Only) -->
+        <?php if ($isAdmin): ?>
+            <div class="add-user-container">
+                <h2>Adicionar Novo Usuário</h2>
+                <form class="add-user-form">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Senha</th>
+                                <th style="text-align:center;">Administrador</th>
+                                <th style="text-align:center;">Habilitado</th>
+                                <th style="text-align:center;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <input type="text" name="username" placeholder="Novo Usuário" required>
+                                </td>
+                                <td>
+                                    <input type="text" name="password" placeholder="Senha" required>
+                                </td>
+                                <td style="text-align:center;">
+                                    <input type="checkbox" name="admin" value="1">
+                                </td>
+                                <td style="text-align:center;">
+                                    <input type="checkbox" name="enabled" value="1">
+                                </td>
+                                <td style="text-align:center;">
+                                    <input type="hidden" name="new_user" value="1">
+                                    <button type="submit">Adicionar</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </form>
+            </div>
+        <?php endif; ?>
+        
+        <!-- Existing Users -->
+        <div class="user-container">
+            <h2>Usuários Cadastrados</h2>
             <table>
                 <thead>
                     <tr>
                         <th>Usuário</th>
                         <th>Senha</th>
                         <?php if ($isAdmin): ?>
-                        	<th style="text-align: center; vertical-align: middle;">Administrador</th>
+                            <th style="text-align:center;">Administrador</th>
+                            <th style="text-align:center;">Habilitado</th>
                         <?php endif; ?>
-                        <?php if ($isAdmin): ?>
-                        	<th style="text-align: center; vertical-align: middle;">Habilitado</th>
-                        <?php endif; ?>
-                        <th style="text-align: center; vertical-align: middle;">Ações</th>
+                        <th style="text-align:center;">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($users as $user): ?>
                         <tr>
                             <form class="user-form">
-                                <!-- Username -->
-                                <td style="text-align: left; vertical-align: middle;">
+                                <td>
                                     <input type="hidden" name="username" value="<?php echo htmlspecialchars($user['username']); ?>">
                                     <?php echo htmlspecialchars($user['username']); ?>
                                 </td>
-                                <!-- Password (Plain text input) -->
-                                <td style="text-align: left; vertical-align: middle;">
+                                <td>
                                     <?php if ($isAdmin || $user['username'] === $username): ?>
                                         <input type="text" name="password" placeholder="Nova Senha">
                                     <?php else: ?>
                                         <input type="text" placeholder="********" readonly>
                                     <?php endif; ?>
                                 </td>
-                                <!-- Enabled -->
                                 <?php if ($isAdmin): ?>
-                                	<td style="text-align: center; vertical-align: middle;">
+                                    <td style="text-align:center;">
                                         <input type="checkbox" name="admin" value="1" <?php echo $user['user_admin'] ? 'checked' : ''; ?>>
-                               		</td>
-                                <?php endif; ?>
-                                <!-- Enabled -->
-                                <?php if ($isAdmin): ?>
-                                	<td style="text-align: center; vertical-align: middle;">
+                                    </td>
+                                    <td style="text-align:center;">
                                         <input type="checkbox" name="enabled" value="1" <?php echo $user['enabled'] ? 'checked' : ''; ?>>
-                               		</td>
+                                    </td>
                                 <?php endif; ?>
-                                <!-- Save Button -->
-                                <td style="text-align: center; vertical-align: middle;">
+                                <td style="text-align:center;">
                                     <button type="submit">Atualizar</button>
                                 </td>
                             </form>
@@ -288,46 +280,6 @@ $conn->close();
                 </tbody>
             </table>
         </div>
-        <!-- Show "Adicionar Novo Usuário" only for admin -->
-        <?php if ($isAdmin): ?>
-        <div class="add-user-container">
-            <h2>Adicionar Novo Usuário</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Usuário</th>
-                        <th>Senha</th>
-                        <th style="text-align: center; vertical-align: middle;">Administrador</th>
-                        <th style="text-align: center; vertical-align: middle;">Habilitado</th>
-                        <th style="text-align: center; vertical-align: middle;">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <form class="add-user-form">
-                            <td style="text-align: left; vertical-align: middle;">
-                                <input type="text" name="username" placeholder="Novo Usuário" required>
-                            </td>
-                            <td style="text-align: left; vertical-align: middle;">
-                                <input type="text" name="password" placeholder="Senha" required>
-                            </td>
-                            <td style="text-align: center; vertical-align: middle;">
-                                <input type="checkbox" name="admin" value="1">
-                            </td>
-                            <td style="text-align: center; vertical-align: middle;">
-                                <input type="checkbox" name="enabled" value="1">
-                            </td>
-                            <td style="text-align: center; vertical-align: middle;">
-                                <input type="hidden" name="new_user" value="1">
-                                <button type="submit">Adicionar</button>
-                            </td>
-                        </form>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <?php endif; ?>
     </div>
 </body>
 </html>
-
