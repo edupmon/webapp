@@ -159,90 +159,77 @@ $conn->close();
     <title>Usuários</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        function validatePassword(password) {
-            const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
-            return passwordRegex.test(password);
+<script>
+    // Reusable validation function
+    function validateField(field, value) {
+        const validators = {
+            password: /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/,
+            username: /^[a-z]{4,12}$/,
+        };
+
+        if (!validators[field]) {
+            console.warn(`No validator defined for field: ${field}`);
+            return true; // Default to valid if no validator is defined
         }
-        function validateUsername(username) {
-            const usernameRegex = /^[a-z]{4,12}$/;
-            return usernameRegex.test(username);
-        }
-    
-        // Handle form submission via AJAX
-        $(document).on('submit', '.user-form', function(event) {
-            event.preventDefault(); // Prevent the default form submission
-    
-            const form = $(this);
-            const passwordInput = form.find('input[name="password"]');
-            const password = passwordInput.val();
-    
-            // Client-side validation
-            if (password && !validatePassword(password)) {
-                alert('A senha deve ter pelo menos 8 caracteres, incluindo um número, uma letra maiúscula e um caractere especial.');
-                return;
+
+        return validators[field].test(value);
+    }
+
+    // Reusable function to submit a form via AJAX
+    function submitFormAjax(form, url, successMessage, errorMessage) {
+        const formData = form.serialize(); // Serialize form data
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function (response) {
+                if (response.success) {
+                    alert(successMessage);
+                    form[0].reset(); // Clear form fields
+                    location.reload(); // Reload the page to reflect changes
+                } else {
+                    alert(response.error || errorMessage);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Erro ao processar solicitação:', status, error);
+                alert('Erro na comunicação com o servidor.');
             }
-    
-            const formData = form.serialize(); // Serialize form data
-    
-            $.ajax({
-                url: 'users.php',
-                type: 'POST',
-                data: formData,
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        alert('Alterações efetuadas com sucesso!');
-                        form[0].reset(); // Clear form fields
-                        location.reload(); // Reload the page to reflect changes
-                    } else {
-                        alert(response.error || 'Erro ao gravar alterações.');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Erro ao processar solicitação:', status, error);
-                    alert('Erro na comunicação com o servidor.');
-                }
-            });
         });
-    
-        // Handle "Adicionar Novo Usuário" form submission via AJAX
-        $(document).on('submit', '.add-user-form', function(event) {
-            event.preventDefault(); // Prevent the default form submission
-    
-            const form = $(this);
-            const usernameInput = form.find('input[name="username"]');
-            const username = usernameInput.val();
-            
-            // Client-side username validation
-            if (!validateUsername(username)) {
-                alert('O nome de usuário deve conter apenas letras minúsculas (a-z), sem espaços, com 4 a 12 caracteres.');
-                return;
-            }            
-            
-            const formData = form.serialize(); // Serialize form data
-    
-            $.ajax({
-                url: 'users.php',
-                type: 'POST',
-                data: formData,
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        alert('Usuário adicionado com sucesso!');
-                        form[0].reset(); // Clear the form
-                        location.reload(); // Reload the page to show the new user
-                    } else {
-                        alert(response.error || 'Erro ao adicionar usuário.');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Erro ao processar solicitação:', status, error);
-                    alert('Erro na comunicação com o servidor.');
-                }
-            });
-        });
-    </script>
+    }
+
+    // Handle form submission via AJAX
+    $(document).on('submit', '.user-form, .add-user-form', function (event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        const form = $(this);
+        const isAddUser = form.hasClass('add-user-form'); // Determine the form type
+        const field = isAddUser ? 'username' : 'password';
+        const input = form.find(`input[name="${field}"]`);
+        const value = input.val();
+
+        // Client-side validation
+        if (value && !validateField(field, value)) {
+            const errorMessage = isAddUser
+                ? 'O nome de usuário deve conter apenas letras minúsculas (a-z), sem espaços, com 4 a 12 caracteres.'
+                : 'A senha deve ter pelo menos 8 caracteres, incluindo um número, uma letra maiúscula e um caractere especial.';
+            alert(errorMessage);
+            return;
+        }
+
+        // Submit form via AJAX
+        const successMessage = isAddUser
+            ? 'Usuário adicionado com sucesso!'
+            : 'Alterações efetuadas com sucesso!';
+        const errorMessage = isAddUser
+            ? 'Erro ao adicionar usuário.'
+            : 'Erro ao gravar alterações.';
+
+        submitFormAjax(form, 'users.php', successMessage, errorMessage);
+    });
+</script>
 </head>
 <body>
     <div class="main">
@@ -254,12 +241,12 @@ $conn->close();
                         <th>Usuário</th>
                         <th>Senha</th>
                         <?php if ($isAdmin): ?>
-                        	<th>Administrador</th>
+                        	<th style="text-align: center; vertical-align: middle;">Administrador</th>
                         <?php endif; ?>
                         <?php if ($isAdmin): ?>
-                        	<th>Habilitado</th>
+                        	<th style="text-align: center; vertical-align: middle;">Habilitado</th>
                         <?php endif; ?>
-                        <th>Ações</th>
+                        <th style="text-align: center; vertical-align: middle;">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -310,9 +297,9 @@ $conn->close();
                     <tr>
                         <th>Usuário</th>
                         <th>Senha</th>
-                        <th>Administrador</th>
-                        <th>Habilitado</th>
-                        <th>Ações</th>
+                        <th style="text-align: center; vertical-align: middle;">Administrador</th>
+                        <th style="text-align: center; vertical-align: middle;">Habilitado</th>
+                        <th style="text-align: center; vertical-align: middle;">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
