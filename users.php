@@ -50,6 +50,22 @@ function validatePassword($password) {
     }
 }
 
+// Fetch users data
+$conn = getDatabaseConnection();
+if ($isAdmin) {
+    // Admin: Retrieve all users
+    $stmt = $conn->prepare("SELECT username, user_password, user_admin, enabled FROM users");
+} else {
+    // Non-admin: Retrieve only the logged-in user
+    $stmt = $conn->prepare("SELECT username, user_password FROM users WHERE username = ?");
+    $stmt->bind_param("s", $username);
+}
+$stmt->execute();
+$result = $stmt->get_result();
+$users = $result->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
+$conn->close();
+
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json'); // Ensure JSON response
@@ -60,14 +76,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $submittedPassword = $_POST['password'] ?? null;
         $submittedAdmin = isset($_POST['admin']) ? 1 : 0;
         $submittedEnabled = isset($_POST['enabled']) ? 1 : 0;
-        $isNewUser = isset($_POST['new_user']) ? true : false;
+        $submittedAddUser = isset($_POST['add_user']) ? true : false;
+        $submittedDeleteUser = isset($_POST['delete_user']) ? true : false;
 
         // Validate the username
         validateUsername($submittedUsername);
 
         $conn = getDatabaseConnection();
 
-        if ($isNewUser && $isAdmin) {
+        if ($submittedAddUser && $isAdmin) {
             // Validate password for new users
             validatePassword($submittedPassword);
 
@@ -80,6 +97,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $stmt->close();
             $response['success'] = true;
+        } else if ($submittedDeleteUser && $isAdmin) {
+        	$submittedUsername = $_POST['username'] ?? null;
+        	if (empty($submittedUsername)) {
+            	throw new Exception('O nome de usuário é obrigatório para exclusão.');
+        	}
+        	
+        	// Prevent deleting the currently logged-in user
+        	if ($submittedUsername === $username) {
+        	    throw new Exception('Você não pode excluir seu próprio usuário.');
+        	}
+        	
+        	// Validate if the submitted username exists in the list of users
+        	$userExists = false;
+        	foreach ($users as $user) {
+        	    if ($user['username'] === $submittedUsername) {
+        	        $userExists = true;
+        	        break;
+        	    }
+        	}
+        	
+        	if (!$userExists) {
+        	    throw new Exception('O usuário especificado não existe.');
+        	}
+        	
+        	// Proceed to delete the user
+        	$stmt = $conn->prepare("DELETE FROM users WHERE username = ?");
+        	$stmt->bind_param("s", $submittedUsername);
+        	if (!$stmt->execute()) {
+            	throw new Exception('Erro ao excluir o usuário.');
+        	}
+        	$stmt->close();
+        	$response['success'] = true;
         } else {
             // Validate password for updates (if provided)
             if (!empty($submittedPassword)) {
@@ -133,22 +182,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     echo json_encode($response);
     exit;
 }
-
-// Fetch users data
-$conn = getDatabaseConnection();
-if ($isAdmin) {
-    // Admin: Retrieve all users
-    $stmt = $conn->prepare("SELECT username, user_password, user_admin, enabled FROM users");
-} else {
-    // Non-admin: Retrieve only the logged-in user
-    $stmt = $conn->prepare("SELECT username, user_password FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
-}
-$stmt->execute();
-$result = $stmt->get_result();
-$users = $result->fetch_all(MYSQLI_ASSOC);
-$stmt->close();
-$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -161,7 +194,7 @@ $conn->close();
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         // Handle form submission via AJAX
-        $(document).on('submit', '.user-form, .add-user-form', function(event) {
+        $(document).on('submit', '.user-form, .add-user-form, .delete-user-form', function(event) {
             event.preventDefault();
 
             const form = $(this);
@@ -223,8 +256,36 @@ $conn->close();
                                     <input type="checkbox" name="enabled" value="1">
                                 </td>
                                 <td style="text-align:center;">
-                                    <input type="hidden" name="new_user" value="1">
+                                    <input type="hidden" name="add_user" value="1">
                                     <button type="submit">Adicionar</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </form>
+            </div>
+        <?php endif; ?>
+        
+        <!-- Delete User (Admin Only) -->
+        <?php if ($isAdmin): ?>
+            <div class="delete-user-container">
+                <h2>Excluir Usuário</h2>
+                <form class="delete-user-form">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th style="text-align:center;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <input type="text" name="username" placeholder="Usuário" required>
+                                </td>
+                                <td style="text-align:center;">
+                                    <input type="hidden" name="delete_user" value="1">
+                                    <button type="submit">Excluir</button>
                                 </td>
                             </tr>
                         </tbody>
