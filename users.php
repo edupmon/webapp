@@ -26,7 +26,7 @@ if (!isset($_SESSION['username'])) {
 
 require 'db.php'; // Database connection
 $username = htmlspecialchars($_SESSION['username']);
-$isAdmin = $username === 'admin';
+$isAdmin = htmlspecialchars($_SESSION['admin']) === '1';
 
 // Helper function to validate usernames
 function validateUsername($username) {
@@ -58,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $submittedUsername = $_POST['username'] ?? null;
         $submittedPassword = $_POST['password'] ?? null;
+        $submittedAdmin = isset($_POST['admin']) ? 1 : 0;
         $submittedEnabled = isset($_POST['enabled']) ? 1 : 0;
         $isNewUser = isset($_POST['new_user']) ? true : false;
 
@@ -72,8 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Add new user
             $hashedPassword = password_hash($submittedPassword, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("INSERT INTO users (username, password, enabled, created_by) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("ssis", $submittedUsername, $hashedPassword, $submittedEnabled, $_SESSION['username']);
+            $stmt = $conn->prepare("INSERT INTO users (username, user_password, user_admin, enabled, created_by) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssiis", $submittedUsername, $hashedPassword, $submittedAdmin, $submittedEnabled, $_SESSION['username']);
             if (!$stmt->execute()) {
                 throw new Exception('Erro ao adicionar o usuário.');
             }
@@ -93,9 +94,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if (!empty($submittedPassword)) {
                     $hashedPassword = password_hash($submittedPassword, PASSWORD_DEFAULT);
-                    $query .= "password = ?, ";
+                    $query .= "user_password = ?, ";
                     $params[] = $hashedPassword;
                     $types .= "s";
+                }
+                
+                if ($isAdmin) {
+                    $query .= "user_admin = ?, ";
+                    $params[] = $submittedAdmin;
+                    $types .= "i";
                 }
 
                 if ($isAdmin) {
@@ -131,10 +138,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $conn = getDatabaseConnection();
 if ($isAdmin) {
     // Admin: Retrieve all users
-    $stmt = $conn->prepare("SELECT username, password, enabled FROM users");
+    $stmt = $conn->prepare("SELECT username, user_password, user_admin, enabled FROM users");
 } else {
     // Non-admin: Retrieve only the logged-in user
-    $stmt = $conn->prepare("SELECT username, password, enabled FROM users WHERE username = ?");
+    $stmt = $conn->prepare("SELECT username, user_password FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
 }
 $stmt->execute();
@@ -246,7 +253,12 @@ $conn->close();
                     <tr>
                         <th>Usuário</th>
                         <th>Senha</th>
-                        <th>Habilitado</th>
+                        <?php if ($isAdmin): ?>
+                        	<th>Administrador</th>
+                        <?php endif; ?>
+                        <?php if ($isAdmin): ?>
+                        	<th>Habilitado</th>
+                        <?php endif; ?>
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -268,13 +280,17 @@ $conn->close();
                                     <?php endif; ?>
                                 </td>
                                 <!-- Enabled -->
-                                <td style="text-align: center; vertical-align: middle;">
-                                    <?php if ($isAdmin): ?>
+                                <?php if ($isAdmin): ?>
+                                	<td style="text-align: center; vertical-align: middle;">
+                                        <input type="checkbox" name="admin" value="1" <?php echo $user['user_admin'] ? 'checked' : ''; ?>>
+                               		</td>
+                                <?php endif; ?>
+                                <!-- Enabled -->
+                                <?php if ($isAdmin): ?>
+                                	<td style="text-align: center; vertical-align: middle;">
                                         <input type="checkbox" name="enabled" value="1" <?php echo $user['enabled'] ? 'checked' : ''; ?>>
-                                    <?php else: ?>
-                                        <input type="checkbox" <?php echo $user['enabled'] ? 'checked' : ''; ?> disabled>
-                                    <?php endif; ?>
-                                </td>
+                               		</td>
+                                <?php endif; ?>
                                 <!-- Save Button -->
                                 <td style="text-align: center; vertical-align: middle;">
                                     <button type="submit">Atualizar</button>
@@ -294,6 +310,7 @@ $conn->close();
                     <tr>
                         <th>Usuário</th>
                         <th>Senha</th>
+                        <th>Administrador</th>
                         <th>Habilitado</th>
                         <th>Ações</th>
                     </tr>
@@ -306,6 +323,9 @@ $conn->close();
                             </td>
                             <td style="text-align: left; vertical-align: middle;">
                                 <input type="text" name="password" placeholder="Senha" required>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle;">
+                                <input type="checkbox" name="admin" value="1">
                             </td>
                             <td style="text-align: center; vertical-align: middle;">
                                 <input type="checkbox" name="enabled" value="1">

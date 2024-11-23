@@ -35,7 +35,6 @@ if (!in_array($page, $allowed_pages)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Sidebar styles */
         .sidebar {
@@ -183,11 +182,25 @@ if (!in_array($page, $allowed_pages)) {
             const sidebar = document.querySelector('.sidebar');
             sidebar.classList.toggle('collapsed');
         }
-        // Toggle submenu
+
+        // Toggle submenu with auto-collapse for others
         function toggleSubmenu(submenuId) {
+            const allSubmenus = document.querySelectorAll('.submenu');
             const submenu = document.getElementById(submenuId);
             const toggleLink = submenu.previousElementSibling; // The parent menu item
-        
+
+            // Collapse all other submenus
+            allSubmenus.forEach((otherSubmenu) => {
+                if (otherSubmenu !== submenu) {
+                    otherSubmenu.classList.remove('active');
+                    const parentLink = otherSubmenu.previousElementSibling;
+                    if (parentLink) {
+                        parentLink.setAttribute('aria-expanded', 'false');
+                    }
+                }
+            });
+
+            // Toggle the selected submenu
             submenu.classList.toggle('active');
             const isExpanded = submenu.classList.contains('active');
             toggleLink.setAttribute('aria-expanded', isExpanded);
@@ -204,19 +217,19 @@ if (!in_array($page, $allowed_pages)) {
             <!-- New "Início" menu item -->
             <div class="menu-item">
                 <a href="dashboard.php?page=home" class="<?php echo $page == 'home' ? 'active' : ''; ?>">
-                    <i class="fas fa-home"></i> Início
+                	Início
                 </a>
             </div>
             <div class="menu-item">
                 <a href="#" onclick="toggleSubmenu('admin-submenu')"
-                   aria-expanded="<?php echo $page == 'users' ? 'true' : 'false'; ?>"
+                   aria-expanded="<?php echo in_array($page, ['users']) ? 'true' : 'false'; ?>"
                    aria-controls="admin-submenu">
-                    <i class="fas fa-cogs"></i> Administração
+                	Administração
                 </a>
-                <ul id="admin-submenu" class="submenu <?php echo $page == 'users' ? 'active' : ''; ?>">
+                <ul id="admin-submenu" class="submenu <?php echo in_array($page, ['users']) ? 'active' : ''; ?>">
                     <li>
                         <a href="dashboard.php?page=users" class="<?php echo $page == 'users' ? 'active' : ''; ?>">
-                            <i class="fas fa-users"></i> Usuários
+                        	Usuários
                         </a>
                     </li>
                 </ul>

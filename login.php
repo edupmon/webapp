@@ -34,13 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Usuário bloqueado. Tente novamente mais tarde';
     } else {
         // Validate username and password
-        $stmt = $conn->prepare("SELECT username, password, enabled FROM users WHERE username = ? AND enabled = 1");
+        $stmt = $conn->prepare("SELECT username, user_password, user_admin FROM users WHERE username = ? AND enabled = 1");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $stmt->store_result();
 
         if ($stmt->num_rows === 1) {
-            $stmt->bind_result($dbUsername, $dbPassword, $enabled);
+            $stmt->bind_result($dbUsername, $dbPassword, $dbUserAdmin);
             $stmt->fetch();
 
             if (password_verify($password, $dbPassword)) {
@@ -53,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Secure session
                 session_regenerate_id(true);
                 $_SESSION['username'] = $dbUsername;
+                $_SESSION['admin'] = $dbUserAdmin;
                 $_SESSION['last_activity'] = time(); // Set last activity timestamp
 
                 // Redirect to dashboard
