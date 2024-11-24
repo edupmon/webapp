@@ -72,12 +72,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $response = ['success' => false]; // Default response
 
     try {
-        $submittedUsername = $_POST['username'] ?? null;
-        $submittedPassword = $_POST['password'] ?? null;
-        $submittedAdmin = isset($_POST['admin']) ? 1 : 0;
-        $submittedEnabled = isset($_POST['enabled']) ? 1 : 0;
-        $submittedAddUser = isset($_POST['add_user']) ? true : false;
-        $submittedDeleteUser = isset($_POST['delete_user']) ? true : false;
+    	// Retrieve the raw input data
+    	$input = file_get_contents('php://input');
+    	$data = json_decode($input, true); // Decode JSON into an associative array
+    	
+        $submittedUsername = $data['username'] ?? null;
+        $submittedPassword = $data['password'] ?? null;
+        $submittedAdmin = isset($data['admin']) ? 1 : 0;
+        $submittedEnabled = isset($data['enabled']) ? 1 : 0;
+        $submittedAddUser = isset($data['add_user']) ? true : false;
+        $submittedDeleteUser = isset($data['delete_user']) ? true : false;
 
         // Validate the username
         validateUsername($submittedUsername);
@@ -98,7 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->close();
             $response['success'] = true;
         } else if ($submittedDeleteUser && $isAdmin) {
-        	$submittedUsername = $_POST['username'] ?? null;
         	if (empty($submittedUsername)) {
             	throw new Exception('O nome de usuário é obrigatório para exclusão.');
         	}
@@ -110,12 +113,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         	
         	// Validate if the submitted username exists in the list of users
         	$userExists = false;
-        	foreach ($users as $user) {
-        	    if ($user['username'] === $submittedUsername) {
-        	        $userExists = true;
-        	        break;
-        	    }
-        	}
+			$stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
+			$stmt->bind_param("s", $submittedUsername);
+            if (!$stmt->execute()) {
+                throw new Exception('Erro ao pesquisar o usuário.');
+            }
+            $stmt->bind_result($userCount);
+            $stmt->fetch();
+        	$stmt->close();
+            
+            $userExists = $userCount > 0;
         	
         	if (!$userExists) {
         	    throw new Exception('O usuário especificado não existe.');
@@ -191,33 +198,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Usuários</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        // Handle form submission via AJAX
-        $(document).on('submit', '.user-form, .add-user-form, .delete-user-form', function(event) {
-            event.preventDefault();
-
-            const form = $(this);
-            const formData = form.serialize(); // Serialize form data
-            
-            // Submit form via AJAX
-            $.ajax({
-                url: 'users.php',
-                type: 'POST',
-                data: formData,
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        alert('Operação realizada com sucesso!');
-                        location.reload(); // Reload the page to reflect changes
-                    } else {
-                        alert(response.error || 'Erro ao gravar alterações.');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Erro ao processar solicitação:', status, error);
-                    alert('Erro na comunicação com o servidor.');
+        // Function to handle form submissions
+        async function handleFormSubmit(event) {
+            event.preventDefault(); // Prevent default form submission
+    
+            const form = event.target;
+            const formData = new FormData(form); // Collect form data
+            const data = Object.fromEntries(formData.entries()); // Convert to an object
+    
+            try {
+                const response = await fetch('users.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data), // Send data as JSON
+                });
+    
+                const result = await response.json();
+    
+                if (result.success) {
+                    alert('Operação realizada com sucesso!');
+                    location.reload(); // Reload the page to reflect changes
+                } else {
+                    alert(result.error || 'Erro ao gravar alterações.');
                 }
+            } catch (error) {
+                console.error('Erro ao processar solicitação:', error);
+                alert('Erro na comunicação com o servidor.');
+            }
+        }
+    
+        // Attach the submit event listener to forms
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('form').forEach((form) => {
+                form.addEventListener('submit', handleFormSubmit);
             });
         });
     </script>
