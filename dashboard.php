@@ -229,7 +229,7 @@ if (!in_array($page, $allowed_pages)) {
                 <ul id="admin-submenu" class="submenu <?php echo in_array($page, ['users']) ? 'active' : ''; ?>">
                     <li>
                         <a href="dashboard.php?page=users" class="<?php echo $page == 'users' ? 'active' : ''; ?>">
-                        	Usuários
+                        	Usuárias
                         </a>
                     </li>
                 </ul>

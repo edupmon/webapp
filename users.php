@@ -32,10 +32,10 @@ $isAdmin = htmlspecialchars($_SESSION['admin']) === '1';
 function validateUsername($username) {
     $usernameRegex = '/^[a-z]{4,12}$/';
     if (empty($username)) {
-        throw new Exception('O nome de usuário é obrigatório.');
+        throw new Exception('O nome da usuária é obrigatório.');
     }
     if (!preg_match($usernameRegex, $username)) {
-        throw new Exception('Nome de usuário inválido. O nome de usuário deve conter apenas letras minúsculas (a-z), sem espaços, com 4 a 12 caracteres.');
+        throw new Exception('Nome da usuária inválido. O nome da usuária deve conter apenas letras minúsculas (a-z), sem espaços, com 4 a 12 caracteres.');
     }
 }
 
@@ -97,42 +97,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $conn->prepare("INSERT INTO users (username, user_password, user_admin, enabled, created_by) VALUES (?, ?, ?, ?, ?)");
             $stmt->bind_param("ssiis", $submittedUsername, $hashedPassword, $submittedAdmin, $submittedEnabled, $_SESSION['username']);
             if (!$stmt->execute()) {
-                throw new Exception('Erro ao adicionar o usuário.');
+                throw new Exception('Erro ao adicionar a usuária.');
             }
             $stmt->close();
             $response['success'] = true;
         } else if ($submittedDeleteUser && $isAdmin) {
         	if (empty($submittedUsername)) {
-            	throw new Exception('O nome de usuário é obrigatório para exclusão.');
+            	throw new Exception('O nome da usuária é obrigatório para exclusão.');
         	}
         	
         	// Prevent deleting the currently logged-in user
         	if ($submittedUsername === $username) {
-        	    throw new Exception('Você não pode excluir seu próprio usuário.');
+        	    throw new Exception('Você não pode excluir sua própria usuária.');
         	}
         	
-        	// Validate if the submitted username exists in the list of users
-        	$userExists = false;
+        	// Validate if the submitted username exists
 			$stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
 			$stmt->bind_param("s", $submittedUsername);
             if (!$stmt->execute()) {
-                throw new Exception('Erro ao pesquisar o usuário.');
+                throw new Exception('Erro ao pesquisar a usuária.');
             }
             $stmt->bind_result($userCount);
             $stmt->fetch();
         	$stmt->close();
-            
-            $userExists = $userCount > 0;
         	
-        	if (!$userExists) {
-        	    throw new Exception('O usuário especificado não existe.');
+        	if ($userCount === 0) {
+        	    throw new Exception('A usuária especificado não existe.');
         	}
         	
         	// Proceed to delete the user
         	$stmt = $conn->prepare("DELETE FROM users WHERE username = ?");
         	$stmt->bind_param("s", $submittedUsername);
         	if (!$stmt->execute()) {
-            	throw new Exception('Erro ao excluir o usuário.');
+            	throw new Exception('Erro ao excluir a usuária.');
         	}
         	$stmt->close();
         	$response['success'] = true;
@@ -174,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $conn->prepare($query);
                 $stmt->bind_param($types, ...$params);
                 if (!$stmt->execute()) {
-                    throw new Exception('Erro ao atualizar o usuário.');
+                    throw new Exception('Erro ao atualizar a usuária.');
                 }
                 $stmt->close();
                 $response['success'] = true;
@@ -196,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Usuários</title>
+    <title>Usuárias</title>
     <link rel="stylesheet" href="styles.css">
     <script>
         // Function to handle form submissions
@@ -240,27 +237,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <div class="main">
-        <h1>Usuários</h1>
+        <h1>Usuárias</h1>
         
         <!-- Add New User (Admin Only) -->
         <?php if ($isAdmin): ?>
             <div class="add-user-container">
-                <h2>Adicionar Novo Usuário</h2>
+                <h2>Adicionar Nova Usuária</h2>
                 <form class="add-user-form">
                     <table>
                         <thead>
                             <tr>
-                                <th>Usuário</th>
+                                <th>Usuária</th>
                                 <th>Senha</th>
-                                <th style="text-align:center;">Administrador</th>
-                                <th style="text-align:center;">Habilitado</th>
-                                <th style="text-align:center;">Ações</th>
+                                <th style="text-align:center;">Administradora</th>
+                                <th style="text-align:center;">Habilitada</th>
+                                <th style="text-align:center;">Ação</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
                                 <td>
-                                    <input type="text" name="username" placeholder="Novo Usuário" required>
+                                    <input type="text" name="username" placeholder="Nome da Usuária" required>
                                 </td>
                                 <td>
                                     <input type="text" name="password" placeholder="Senha" required>
@@ -285,13 +282,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Delete User (Admin Only) -->
         <?php if ($isAdmin): ?>
             <div class="delete-user-container">
-                <h2>Excluir Usuário</h2>
+                <h2>Excluir Usuária</h2>
                 <form class="delete-user-form">
                     <table>
                         <thead>
                             <tr>
-                                <th>Usuário</th>
-                                <th style="text-align:center;">Ações</th>
+                                <th>Usuária</th>
+                                <th style="text-align:center;">Ação</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -312,17 +309,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <!-- Existing Users -->
         <div class="user-container">
-            <h2>Usuários Cadastrados</h2>
+            <h2>Usuárias Cadastradas</h2>
             <table>
                 <thead>
                     <tr>
-                        <th>Usuário</th>
+                        <th>Usuária</th>
                         <th>Senha</th>
                         <?php if ($isAdmin): ?>
-                            <th style="text-align:center;">Administrador</th>
-                            <th style="text-align:center;">Habilitado</th>
+                            <th style="text-align:center;">Administradora</th>
+                            <th style="text-align:center;">Habilitada</th>
                         <?php endif; ?>
-                        <th style="text-align:center;">Ações</th>
+                        <th style="text-align:center;">Ação</th>
                     </tr>
                 </thead>
                 <tbody>
