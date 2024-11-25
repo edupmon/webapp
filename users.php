@@ -251,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Add New User (Admin Only) -->
         <?php if ($isAdmin): ?>
             <div class="add-user-container">
-                <h2>Adicionar Nova Usuária</h2>
+                <h2>Adicionar Usuária</h2>
                 <form id="add-user-form">
                     <table>
                         <thead>
