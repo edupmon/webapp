@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <div class="container">
-        <h1>WebApp</h1>
+        <h1>Acesso</h1>
         <?php if (isset($_GET['timeout']) && $_GET['timeout'] == 1): ?>
             <div class="error">Sua sessão expirou. Por favor, faça login novamente.</div>
         <?php elseif ($error): ?>

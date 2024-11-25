@@ -82,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $submittedEnabled = isset($data['enabled']) ? 1 : 0;
         $submittedAddUser = isset($data['add_user']) ? true : false;
         $submittedDeleteUser = isset($data['delete_user']) ? true : false;
+        $submittedUpdateUser = isset($data['update_user']) ? true : false;
 
         // Validate the username
         validateUsername($submittedUsername);
@@ -133,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         	}
         	$stmt->close();
         	$response['success'] = true;
-        } else {
+        } else if ($submittedUpdateUser) {
             // Validate password for updates (if provided)
             if (!empty($submittedPassword)) {
                 validatePassword($submittedPassword);
@@ -201,29 +202,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             event.preventDefault(); // Prevent default form submission
     
             const form = event.target;
-            const formData = new FormData(form); // Collect form data
-            const data = Object.fromEntries(formData.entries()); // Convert to an object
+            
+            // Check if the form's ID matches the maintain users forms
+            const allowedForms = ['add-user-form', 'delete-user-form', 'update-user-form'];
+            if (allowedForms.includes(form.id)) {
+            
+            	const formData = new FormData(form); // Collect form data
+            	const data = Object.fromEntries(formData.entries()); // Convert to an object
     
-            try {
-                const response = await fetch('users.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data), // Send data as JSON
-                });
+            	try {
+                	const response = await fetch('users.php', {
+                    	method: 'POST',
+                    	headers: {
+                        	'Content-Type': 'application/json',
+                    	},
+                    	body: JSON.stringify(data), // Send data as JSON
+                	});
     
-                const result = await response.json();
+                	const result = await response.json();
     
-                if (result.success) {
-                    alert('Operação realizada com sucesso!');
-                    location.reload(); // Reload the page to reflect changes
-                } else {
-                    alert(result.error || 'Erro ao gravar alterações.');
-                }
-            } catch (error) {
-                console.error('Erro ao processar solicitação:', error);
-                alert('Erro na comunicação com o servidor.');
+                	if (result.success) {
+                    	alert('Operação realizada com sucesso!');
+                    	location.reload(); // Reload the page to reflect changes
+                	} else {
+                    	alert(result.error || 'Erro ao gravar alterações.');
+                	}
+            	} catch (error) {
+                	console.error('Erro ao processar solicitação:', error);
+                	alert('Erro na comunicação com o servidor.');
+            	}
+            } else {
+            	event.target.submit();
             }
         }
     
@@ -243,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if ($isAdmin): ?>
             <div class="add-user-container">
                 <h2>Adicionar Nova Usuária</h2>
-                <form class="add-user-form">
+                <form id="add-user-form">
                     <table>
                         <thead>
                             <tr>
@@ -283,7 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if ($isAdmin): ?>
             <div class="delete-user-container">
                 <h2>Excluir Usuária</h2>
-                <form class="delete-user-form">
+                <form id="delete-user-form">
                     <table>
                         <thead>
                             <tr>
@@ -308,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
         
         <!-- Existing Users -->
-        <div class="user-container">
+        <div class="update-user-container">
             <h2>Usuárias Cadastradas</h2>
             <table>
                 <thead>
@@ -325,7 +334,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <tbody>
                     <?php foreach ($users as $user): ?>
                         <tr>
-                            <form class="user-form">
+                            <form id="update-user-form">
                                 <td>
                                     <input type="hidden" name="username" value="<?php echo htmlspecialchars($user['username']); ?>">
                                     <?php echo htmlspecialchars($user['username']); ?>
@@ -346,6 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </td>
                                 <?php endif; ?>
                                 <td style="text-align:center;">
+                                	<input type="hidden" name="update_user" value="1">
                                     <button type="submit">Atualizar</button>
                                 </td>
                             </form>
