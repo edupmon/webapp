@@ -205,6 +205,21 @@ if (!in_array($page, $allowed_pages)) {
             const isExpanded = submenu.classList.contains('active');
             toggleLink.setAttribute('aria-expanded', isExpanded);
         }
+        
+        // Update page title base on menu selection
+        document.addEventListener("DOMContentLoaded", () => {
+            // Find the active menu item
+            const activeLink = document.querySelector(".menu a.active, .submenu a.active");
+            
+            // Check if there's an active link
+            if (activeLink) {
+                // Get the text content of the active link
+                const pageTitle = activeLink.textContent.trim();
+                
+                // Update the <title> tag
+                document.title = pageTitle;
+            }
+        });
     </script>
 </head>
 <body>
