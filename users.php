@@ -251,13 +251,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Add New User (Admin Only) -->
         <?php if ($isAdmin): ?>
             <div class="add-user-container">
-                <h2>Adicionar Usuária</h2>
                 <form id="add-user-form">
                     <table>
                         <thead>
                             <tr>
-                                <th>Usuária</th>
-                                <th>Senha</th>
+                                <th colspan="2">Cadastrar</th>
                                 <th style="text-align:center;">Administradora</th>
                                 <th style="text-align:center;">Habilitada</th>
                                 <th style="text-align:center;">Ação</th>
@@ -279,7 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </td>
                                 <td style="text-align:center;">
                                     <input type="hidden" name="add_user" value="1">
-                                    <button type="submit">Adicionar</button>
+                                    <button type="submit">Cadastrar</button>
                                 </td>
                             </tr>
                         </tbody>
@@ -291,13 +289,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Delete User (Admin Only) -->
         <?php if ($isAdmin): ?>
             <div class="delete-user-container">
-                <h2>Excluir Usuária</h2>
                 <form id="delete-user-form">
                     <table>
                         <thead>
                             <tr>
-                                <th>Usuária</th>
-                                <th style="text-align:center;">Ação</th>
+                                <th colspan="2">Excluir</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -318,12 +314,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <!-- Existing Users -->
         <div class="update-user-container">
-            <h2>Usuárias Cadastradas</h2>
             <table>
                 <thead>
                     <tr>
-                        <th>Usuária</th>
-                        <th>Senha</th>
+                        <th colspan="2">Atualizar</th>
                         <?php if ($isAdmin): ?>
                             <th style="text-align:center;">Administradora</th>
                             <th style="text-align:center;">Habilitada</th>

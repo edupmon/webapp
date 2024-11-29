@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Usuário bloqueado. Tente novamente mais tarde';
     } else {
         // Validate username and password
-        $stmt = $conn->prepare("SELECT username, user_password, user_admin FROM users WHERE username = ? AND enabled = 1");
+        $stmt = $conn->prepare("SELECT username, user_password, user_admin FROM users WHERE enabled = 1 AND username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $stmt->store_result();

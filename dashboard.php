@@ -58,7 +58,7 @@ if (!in_array($page, $allowed_pages)) {
         .sidebar-header {
             padding: 20px;
             text-align: center;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             background-color: #b0c7e5; /* Slightly darker blue for header contrast */
             color: #2a4f96;
