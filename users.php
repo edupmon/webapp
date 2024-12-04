@@ -113,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         	}
         	
         	// Validate if the submitted username exists
-			$stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
+			$stmt = $conn->prepare("SELECT COUNT(1) FROM users WHERE username = ?");
 			$stmt->bind_param("s", $submittedUsername);
             if (!$stmt->execute()) {
                 throw new Exception('Erro ao pesquisar a usuária.');
