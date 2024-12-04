@@ -3,12 +3,10 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
 // Define session timeout constant if not already defined
 if (!defined('SESSION_TIMEOUT')) {
     define('SESSION_TIMEOUT', 1800); // 30 minutes
 }
-
 // Check session timeout
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT)) {
     session_unset();
@@ -17,16 +15,13 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
     exit;
 }
 $_SESSION['last_activity'] = time(); // Update last activity timestamp
-
 // Check if user is logged in
 if (!isset($_SESSION['username'])) {
     header("Location: login.php");
     exit;
 }
-
 $username = htmlspecialchars($_SESSION['username']);
 ?>
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
